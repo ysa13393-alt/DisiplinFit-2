@@ -4,7 +4,10 @@ name: Build DisiplinFit APK
 on:
   workflow_dispatch:
   push:
-    branches: [ana, main]
+    branches: [main, ana]
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -19,24 +22,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Gradle kur
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
       - name: ZIP dosyasından projeyi çıkar
+        shell: bash
         run: |
-          unzip -q "DisiplinFit_Android_Projesi (3).zip" -d project
-          find project -type f -name gradlew
+          ZIP_FILE="$(find . -maxdepth 1 -type f -name '*.zip' | head -n 1)"
+          if [ -n "$ZIP_FILE" ]; then
+            mkdir -p project
+            unzip -o "$ZIP_FILE" -d project
+            echo "PROJECT_DIR=project" >> "$GITHUB_ENV"
+          else
+            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
+          fi
 
       - name: APK oluştur
-        run: |
-          GRADLEW="$(find project -type f -name gradlew | head -n 1)"
-          if [ -z "$GRADLEW" ]; then
-            echo "ZIP içinde gradlew dosyası bulunamadı."
-            exit 1
-          fi
-          cd "$(dirname "$GRADLEW")"
-          chmod +x gradlew
-          ./gradlew assembleDebug
+        run: gradle -p "$PROJECT_DIR" assembleDebug
 
       - name: APK dosyasını sakla
         uses: actions/upload-artifact@v4
         with:
           name: DisiplinFit-APK
-          path: project/**/build/outputs/apk/debug/*.apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
