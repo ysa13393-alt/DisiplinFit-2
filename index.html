@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>DisiplinFit</title>
+<style>
+:root{color-scheme:dark;--bg:#07120f;--card:#102a20;--line:#244237;--green:#45f5a1;--muted:#b7d7c8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font:16px system-ui,-apple-system,sans-serif;padding:18px 16px 32px}
+header{display:flex;align-items:center;gap:12px;margin:6px 0 22px}.logo{background:#123b2b;color:var(--green);border-radius:14px;padding:12px;font-size:24px}
+h1{font-size:24px;margin:0}small,.muted{color:var(--muted)}h2{font-size:20px;margin:22px 0 12px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.big{font-size:27px;font-weight:800;margin:4px 0}.green{color:var(--green)}.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.day{border:1px solid var(--line);background:var(--card);color:var(--muted);padding:10px 0;border-radius:11px;font-size:12px}.day.active{background:var(--green);color:#062016;font-weight:800}.day.done{border-color:var(--green)}
+.task{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid #1b352b}.task:last-child{border:0}.task input{accent-color:var(--green);width:20px;height:20px;margin-top:2px}.task label{flex:1;line-height:1.35}
+button,select,input[type=text]{font:inherit;border-radius:12px;border:1px solid var(--line);padding:12px;background:#102a20;color:#fff}
+button.primary{background:var(--green);color:#062016;border:0;font-weight:800;width:100%;margin-top:14px}
+select{width:100%;margin-top:8px} .bar{height:9px;background:var(--line);border-radius:20px;overflow:hidden;margin:8px 0}.bar span{display:block;height:100%;background:var(--green);width:0}
+.note{font-size:12px;color:var(--muted);line-height:1.45}.toast{color:var(--green);font-weight:700;min-height:22px}
+</style>
+</head>
+<body>
+<header><div class="logo">✦</div><div><h1>DisiplinFit</h1><small>Küçük adımlar. Büyük değişim.</small></div></header>
+<div class="cards">
+ <div class="card"><div>🔥 Günlük seri</div><div class="big" id="streak">0 gün</div><small>Takvimde tamamlanan günler</small></div>
+ <div class="card"><div>🏆 Puanların</div><div class="big" id="points">0</div><small>Her gün için +20 puan</small></div>
+</div>
+<div class="card">
+ <div class="row"><b>Haftalık hedef</b><b class="green" id="weeklyText">0/5 gün</b></div>
+ <div class="bar"><span id="weeklyBar"></span></div>
+ <small>Hedef: haftada 5 aktif gün</small>
+</div>
+<h2>Haftalık program</h2>
+<div class="days" id="days"></div>
+<h2 id="dayTitle">Bugünün görevleri</h2>
+<div class="card" id="taskCard"></div>
+<div class="toast" id="toast" aria-live="polite"></div>
+<button class="primary" id="complete">Günü tamamla · +20 puan</button>
+<h2>🎁 Ödül hedefin</h2>
+<div class="card">
+ <div class="row"><b>Haftalık hedef</b><b class="green" id="rewardProgress">0/5</b></div>
+ <div class="bar"><span id="rewardBar"></span></div>
+ <label for="reward">Hedefe ulaşınca ödülün</label>
+ <select id="reward">
+  <option>Kendi ödülümü belirle</option><option>Sevdiğim bir film veya oyun zamanı</option><option>Küçük bir spor ekipmanı</option><option>Arkadaşlarımla keyifli bir aktivite</option><option>Sevdiğim bir etkinlik</option>
+ </select>
+ <p class="note">Ödülünü kendin belirle. Dinlenme günleri de programın önemli bir parçasıdır.</p>
+</div>
+<h2>Hatırlatma ve kayıt</h2>
+<div class="card">
+ <label for="reminder">Günlük antrenman saatin</label>
+ <select id="reminder"><option>15:30</option><option>16:00</option><option selected>17:00</option><option>17:30</option><option>18:00</option><option>19:00</option></select>
+ <p class="note">Bu ilk sürüm saat tercihini kaydeder; bildirim göndermez. İlerleme bu telefonda otomatik saklanır.</p>
+ <button id="reset">Tüm ilerlemeyi sıfırla</button>
+</div>
+<p class="note">Sağlık notu: Ön kol ağrın sürüyorsa ağrıya neden olan kol egzersizlerini yapma. Ağrı varken kendini zorlayarak hedef tamamlama.</p>
+<script>
+const days=["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
+const tasks={
+ "Pazartesi":["Yerinde yürüme — 1 dk","Omuz çevirme — 30 sn","Kol daireleri — 30 sn","Gövde döndürme — 1 dk","Yavaş çömelme — 8–10 tekrar","Duvar şınavı — 8–10 tekrar","Göğüs + arka kol antrenmanı"],
+ "Salı":["Yerinde yürüme — 1 dk","Omuz çevirme — 30 sn","Kol daireleri — 30 sn","Gövde döndürme — 1 dk","Yavaş çömelme — 8–10 tekrar","Duvar şınavı — 8–10 tekrar","Sırt + biceps (ön kol ağrısı yoksa)"],
+ "Çarşamba":["Yerinde yürüme — 1 dk","Omuz çevirme — 30 sn","Kol daireleri — 30 sn","Gövde döndürme — 1 dk","Yavaş çömelme — 8–10 tekrar","Duvar şınavı — 8–10 tekrar","Bacak + kalça antrenmanı"],
+ "Perşembe":["Yerinde yürüme — 1 dk","Omuz çevirme — 30 sn","Kol daireleri — 30 sn","Gövde döndürme — 1 dk","Yavaş çömelme — 8–10 tekrar","Duvar şınavı — 8–10 tekrar","Omuz + karın antrenmanı"],
+ "Cuma":["Yerinde yürüme — 1 dk","Omuz çevirme — 30 sn","Kol daireleri — 30 sn","Gövde döndürme — 1 dk","Hafif tüm vücut antrenmanı"],
+ "Cumartesi":["Rahat tempoda yürüyüş","Hafif hareketlilik / esneme"],
+ "Pazar":["Dinlenme ve toparlanma"]
+};
+const key="disiplinfit-v1";
+let state={selected:days[(new Date().getDay()+6)%7],checked:{},completed:{},points:0,reward:"Kendi ödülümü belirle",reminder:"17:00"};
+try{const saved=JSON.parse(localStorage.getItem(key)||"null");if(saved)state={...state,...saved};}catch(e){}
+function save(){localStorage.setItem(key,JSON.stringify(state));}
+function weekKey(d=new Date()){const x=new Date(d);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")}
+function doneToday(){return !!state.completed[weekKey()+":"+state.selected]}
+function weekCount(){return days.filter(d=>state.completed[weekKey()+":"+d]).length}
+function render(){
+ document.getElementById("days").innerHTML=days.map(d=>`<button class="day ${d===state.selected?"active":""} ${state.completed[weekKey()+":"+d]?"done":""}" data-day="${d}">${d.slice(0,3)}${state.completed[weekKey()+":"+d]?" ✓":""}</button>`).join("");
+ document.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{state.selected=b.dataset.day;save();render()});
+ document.getElementById("dayTitle").textContent=state.selected+" görevleri";
+ document.getElementById("taskCard").innerHTML=tasks[state.selected].map((t,i)=>`<div class="task"><input type="checkbox" id="t${i}" data-task="${i}" ${state.checked[state.selected+":"+i]?"checked":""} ${doneToday()?"disabled":""}><label for="t${i}">${t}</label></div>`).join("")+(state.selected==="Pazar"?'<p class="note">Dinlenme günü. Görev kutularını işaretlemek zorunlu değildir.</p>':'');
+ document.querySelectorAll("[data-task]").forEach(el=>el.onchange=()=>{state.checked[state.selected+":"+el.dataset.task]=el.checked;save();});
+ document.getElementById("complete").disabled=doneToday()||(!state.selected.includes("Pazar")&&tasks[state.selected].some((_,i)=>!state.checked[state.selected+":"+i]));
+ document.getElementById("complete").textContent=doneToday()?"Bu gün tamamlandı ✓":(state.selected==="Pazar"?"Dinlenme gününü tamamla · +20 puan":"Günü tamamla · +20 puan");
+ document.getElementById("toast").textContent=doneToday()?"Tebrikler! İlerlemen kaydedildi.":"";
+ document.getElementById("points").textContent=state.points;
+ document.getElementById("weeklyText").textContent=weekCount()+"/5 gün";
+ document.getElementById("weeklyBar").style.width=Math.min(weekCount()/5*100,100)+"%";
+ document.getElementById("rewardProgress").textContent=weekCount()+"/5";
+ document.getElementById("rewardBar").style.width=Math.min(weekCount()/5*100,100)+"%";
+ document.getElementById("reward").value=state.reward;
+ document.getElementById("reminder").value=state.reminder;
+ let streak=0;let date=new Date();
+ for(let i=0;i<366;i++){let d=new Date(date);d.setDate(date.getDate()-i);let day=days[(d.getDay()+6)%7];if(state.completed[weekKey(d)+":"+day])streak++;else if(i>0)break;}
+ document.getElementById("streak").textContent=streak+" gün";
+}
+document.getElementById("complete").onclick=()=>{let k=weekKey()+":"+state.selected;if(state.completed[k])return;state.completed[k]=true;state.points+=20;save();render();};
+document.getElementById("reward").onchange=e=>{state.reward=e.target.value;save()};
+document.getElementById("reminder").onchange=e=>{state.reminder=e.target.value;save()};
+document.getElementById("reset").onclick=()=>{if(confirm("Tüm puanlar, işaretlemeler ve seri silinsin mi?")){state={selected:state.selected,checked:{},completed:{},points:0,reward:state.reward,reminder:state.reminder};save();render();}};
+render();
+</script>
+</body></html>
