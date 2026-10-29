@@ -1,0 +1,32 @@
+
+name: Build DisiplinFit APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, ana]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+
+      - name: Java kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle ile APK oluştur
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: APK dosyasını sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: DisiplinFit-APK
+          path: app/build/outputs/apk/debug/*.apk
+          
