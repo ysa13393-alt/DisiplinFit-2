@@ -4,7 +4,7 @@ name: Build DisiplinFit APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, ana]
+    branches: [ana, main]
 
 jobs:
   build:
@@ -19,8 +19,19 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Gradle ile APK oluştur
+      - name: ZIP dosyasından projeyi çıkar
         run: |
+          unzip -q "DisiplinFit_Android_Projesi (3).zip" -d project
+          find project -type f -name gradlew
+
+      - name: APK oluştur
+        run: |
+          GRADLEW="$(find project -type f -name gradlew | head -n 1)"
+          if [ -z "$GRADLEW" ]; then
+            echo "ZIP içinde gradlew dosyası bulunamadı."
+            exit 1
+          fi
+          cd "$(dirname "$GRADLEW")"
           chmod +x gradlew
           ./gradlew assembleDebug
 
@@ -28,5 +39,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DisiplinFit-APK
-          path: app/build/outputs/apk/debug/*.apk
-          
+          path: project/**/build/outputs/apk/debug/*.apk
